@@ -18,7 +18,9 @@ def chat(request):
 
     def generate_response():
         for resp in openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", messages=[{"role": "user", "content": prompt}], stream=True
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            stream=True,
         ):
             content = resp["choices"][0]["delta"]
 
