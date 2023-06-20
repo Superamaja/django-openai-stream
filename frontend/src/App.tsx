@@ -6,6 +6,7 @@ const App = () => {
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        setInput("");
 
         // Send a request to http://127.0.0.1:8000/chat/ with prompt
         const response = await fetch("http://127.0.0.1:8000/chat/", {
@@ -25,7 +26,7 @@ const App = () => {
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-                result += decoder.decode(value);
+                result = decoder.decode(value);
                 setResponse(result);
             }
             console.log("Response fully received");

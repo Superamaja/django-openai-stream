@@ -1,3 +1,5 @@
+import json
+
 import openai
 from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework.decorators import api_view
@@ -17,14 +19,23 @@ def chat(request):
         return JsonResponse({"error": "No prompt provided."}, status=400)
 
     def generate_response():
+        messages = [{"role": "user", "content": prompt}]
+
         for resp in openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             stream=True,
         ):
             content = resp["choices"][0]["delta"]
 
             if content is not None and "content" in content:
-                yield content["content"]
+                if messages[-1]["role"] == "user":
+                    messages.append(
+                        {"role": "assistant", "content": content["content"]}
+                    )
+                else:
+                    messages[-1]["content"] += content["content"]
+
+                yield json.dumps(messages)
 
     return StreamingHttpResponse(generate_response(), content_type="text/event-stream")
