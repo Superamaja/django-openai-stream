@@ -19,21 +19,31 @@ def chat(request):
         return JsonResponse({"error": "No messages provided."}, status=400)
 
     def generate_response():
-        for resp in openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            stream=True,
-        ):
-            content = resp["choices"][0]["delta"]
+        try:
+            for resp in openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                stream=True,
+            ):
+                content = resp["choices"][0]["delta"]
 
-            if content is not None and "content" in content:
-                if messages[-1]["role"] == "user":
-                    messages.append(
-                        {"role": "assistant", "content": content["content"]}
-                    )
-                else:
-                    messages[-1]["content"] += content["content"]
+                if content is not None and "content" in content:
+                    if messages[-1]["role"] == "user":
+                        messages.append(
+                            {"role": "assistant", "content": content["content"]}
+                        )
+                    else:
+                        messages[-1]["content"] += content["content"]
 
-                yield json.dumps(messages)
+                    yield json.dumps({"messages": messages, "reset": False})
+
+        except openai.error.RateLimitError:
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": "OpenAI Rate limit exceeded. Please try again later.",
+                }
+            )
+            yield json.dumps({"messages": messages, "reset": True})
 
     return StreamingHttpResponse(generate_response(), content_type="text/event-stream")

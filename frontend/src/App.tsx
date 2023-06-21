@@ -7,7 +7,7 @@ interface Message {
 
 const App = () => {
     const [input, setInput] = useState("");
-    // Example messages: [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello! How"}]
+    // Example messages: [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello"}]
     const [messages, setMessages] = useState<Message[]>([]);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -18,7 +18,8 @@ const App = () => {
         setMessages(newMessages);
         setInput("");
 
-        // Send a request to http://127.0.0.1:8000/chat/ with prompt
+        // Send a request to http://127.0.0.1:8000/chat/ with messages in the body
+        // Example response: {"messages": [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello"}], "reset": false}
         const response = await fetch("http://127.0.0.1:8000/chat/", {
             method: "POST",
             headers: {
@@ -38,20 +39,20 @@ const App = () => {
                 if (done) break;
                 result = decoder.decode(value);
                 try {
-                    setMessages(JSON.parse(result));
+                    setMessages(JSON.parse(result).messages);
                 } catch (e) {
                     // Sometimes the stream combines two JSON objects together, this will split them and parse the last one
                     if (e instanceof SyntaxError) {
-                        const splitResponse = result.split("][");
+                        const splitResponse = result.split("}{");
                         const correctedResponse =
-                            "[" + splitResponse[splitResponse.length - 1];
+                            "{" + splitResponse[splitResponse.length - 1];
                         console.log(
                             "Stream Combined response:\n" +
                                 result +
                                 "\n\nCorrected into:\n" +
                                 correctedResponse
                         );
-                        setMessages(JSON.parse(correctedResponse));
+                        setMessages(JSON.parse(correctedResponse).messages);
                     } else {
                         console.error(e);
                     }
