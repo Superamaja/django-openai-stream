@@ -9,6 +9,7 @@ const App = () => {
     const [input, setInput] = useState("");
     // Example messages: [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello"}]
     const [messages, setMessages] = useState<Message[]>([]);
+    const [reset, setReset] = useState(false);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -39,11 +40,8 @@ const App = () => {
                 if (done) break;
                 result = decoder.decode(value);
                 try {
-                    setMessages(JSON.parse(result).messages);
-                } catch (e) {
-                    // Sometimes the stream combines two JSON objects together, this will split them and parse the last one
-                    if (e instanceof SyntaxError) {
-                        const splitResponse = result.split("}{");
+                    const splitResponse = result.split("}{");
+                    if (splitResponse.length > 1) {
                         const correctedResponse =
                             "{" + splitResponse[splitResponse.length - 1];
                         console.log(
@@ -52,13 +50,18 @@ const App = () => {
                                 "\n\nCorrected into:\n" +
                                 correctedResponse
                         );
-                        setMessages(JSON.parse(correctedResponse).messages);
+                        const parsedResponse = JSON.parse(correctedResponse);
+                        setMessages(parsedResponse.messages);
+                        setReset(parsedResponse.reset);
                     } else {
-                        console.error(e);
+                        const parsedResponse = JSON.parse(result);
+                        setMessages(parsedResponse.messages);
+                        setReset(parsedResponse.reset);
                     }
+                } catch (e) {
+                    console.error(e);
                 }
             }
-            console.log("Response fully received");
         }
     }
 
@@ -72,15 +75,17 @@ const App = () => {
                     </span>
                 ))}
             </p>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="Enter your prompt..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                />
-                <input type="submit" value="Send" />
-            </form>
+            {!reset && (
+                <form onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        placeholder="Enter your prompt..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                    />
+                    <input type="submit" value="Send" />
+                </form>
+            )}
         </div>
     );
 };
