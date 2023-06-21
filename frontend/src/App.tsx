@@ -1,11 +1,21 @@
 import { useState } from "react";
 
+interface Message {
+    role: string;
+    content: string;
+}
+
 const App = () => {
     const [input, setInput] = useState("");
-    const [response, setResponse] = useState("");
+    // Example messages: [{"role": "user", "content": "Hi"}, {"role": "assistant", "content": "Hello! How"}]
+    const [messages, setMessages] = useState<Message[]>([]);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+
+        let newMessages = [...messages, { role: "user", content: input }];
+
+        setMessages(newMessages);
         setInput("");
 
         // Send a request to http://127.0.0.1:8000/chat/ with prompt
@@ -15,7 +25,7 @@ const App = () => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                prompt: input,
+                messages: newMessages,
             }),
         });
 
@@ -27,7 +37,12 @@ const App = () => {
                 const { value, done } = await reader.read();
                 if (done) break;
                 result = decoder.decode(value);
-                setResponse(result);
+                console.log(result);
+                try {
+                    setMessages(JSON.parse(result));
+                } catch (e) {
+                    console.log(e);
+                }
             }
             console.log("Response fully received");
         }
@@ -35,16 +50,23 @@ const App = () => {
 
     return (
         <div>
+            <p>
+                {messages.map((item: any) => (
+                    <span>
+                        {item.role}: {item.content}
+                        <br />
+                    </span>
+                ))}
+            </p>
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
-                    placeholder="Prompt"
+                    placeholder="Enter your prompt..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                 />
-                <input type="submit" value="Submit" />
+                <input type="submit" value="Send" />
             </form>
-            <p>{response}</p>
         </div>
     );
 };

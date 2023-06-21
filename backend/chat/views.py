@@ -14,13 +14,11 @@ openai.api_key = OPENAI_KEY
 @api_view(["POST"])
 def chat(request):
     try:
-        prompt = request.data["prompt"]
+        messages = request.data["messages"]
     except KeyError:
-        return JsonResponse({"error": "No prompt provided."}, status=400)
+        return JsonResponse({"error": "No messages provided."}, status=400)
 
     def generate_response():
-        messages = [{"role": "user", "content": prompt}]
-
         for resp in openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=messages,
