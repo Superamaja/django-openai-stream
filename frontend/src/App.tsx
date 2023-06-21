@@ -37,11 +37,24 @@ const App = () => {
                 const { value, done } = await reader.read();
                 if (done) break;
                 result = decoder.decode(value);
-                console.log(result);
                 try {
                     setMessages(JSON.parse(result));
                 } catch (e) {
-                    console.log(e);
+                    // Sometimes the stream combines two JSON objects together, this will split them and parse the last one
+                    if (e instanceof SyntaxError) {
+                        const splitResponse = result.split("][");
+                        const correctedResponse =
+                            "[" + splitResponse[splitResponse.length - 1];
+                        console.log(
+                            "Stream Combined response:\n" +
+                                result +
+                                "\n\nCorrected into:\n" +
+                                correctedResponse
+                        );
+                        setMessages(JSON.parse(correctedResponse));
+                    } else {
+                        console.error(e);
+                    }
                 }
             }
             console.log("Response fully received");
